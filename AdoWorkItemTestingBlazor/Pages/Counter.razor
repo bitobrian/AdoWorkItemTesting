@@ -1,0 +1,71 @@
+﻿@page "/counter"
+@using AdoWorkItemTestingBlazor.Data
+@inject AdoWorkItemService AdoWorkItemService
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @_currentCount</p>
+
+<br/>
+<p>Selected Iteration: @_iterationPath</p>
+
+<br/>
+<input @bind="_iterationPath" />
+
+<br/>
+<input @bind="_workItemTitle"/>
+
+<br/>
+<input @bind="_workItemDescription"/>
+
+<select value="@_iterationPath" @onchange="@UpdateSelectedIterationPath" class="form-control">
+    @foreach (var i in _iterationPaths)
+    {
+        <option value="@i">@i</option>
+    }
+</select>
+
+<button class="btn btn-primary" @onclick="CreateBugWorkItem" disabled="@_isDisabled">Create Work Item</button>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private int _currentCount = 0;
+    string _workItemTitle = "Test Work Item";
+    string _workItemDescription = "This is a test work item created from a Blazor app";
+    string _iterationPath = "";
+    List<string> _iterationPaths = new();
+    bool _isDisabled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _iterationPaths = await AdoWorkItemService.GetIterationPathsAsync();
+        _iterationPath = GetSafeAdoPath(_iterationPaths[0]);
+    }
+    
+    private async Task IncrementCount()
+    {
+        _currentCount++;
+    }
+    
+    private async Task CreateBugWorkItem()
+    {
+        _isDisabled = true;
+        await AdoWorkItemService.CreateBugWorkItemAsync(
+            new AdoWorkItem()
+            {
+                Title = _workItemTitle, 
+                Description = _workItemDescription,
+                IterationPath = _iterationPath
+            });
+        _isDisabled = false;
+    }
+    
+    private void UpdateSelectedIterationPath(ChangeEventArgs e)
+    {
+        _iterationPath = GetSafeAdoPath(e.Value.ToString());
+    }
+
+    private static string GetSafeAdoPath(string value) => value.Replace(@"\", @"\\");
+}
